@@ -1,3 +1,4 @@
+setuptools
 ace_tools
 altgraph
 annotated-types
