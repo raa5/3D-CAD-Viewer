@@ -128,6 +128,6 @@ def list_files():
 def camera_viewer():
     return render_template('camera_viewer.html')
 
-# Run the app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Use Railway's assigned port
+    app.run(host='0.0.0.0', port=port, debug=True)
