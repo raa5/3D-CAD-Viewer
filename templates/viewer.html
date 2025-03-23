@@ -2,95 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Viewer</title>
-    <!-- Three.js & Tools -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>3D STL Viewer</title>
+    <link rel="stylesheet" href="/static/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/modifiers/SubdivisionModifier.js"></script>
-
-    <style>
-        :root {
-            --background-color: rgb(20, 20, 20);
-            --model-color: rgb(0, 122, 255);
-        }
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: var(--background-color);
-        }
-        #viewer-container {
-            width: 100vw;
-            height: 100vh;
-        }
-    </style>
 </head>
-<body>
+<body class="light">
+    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
     <div id="viewer-container"></div>
+
     <script>
-        const BACKGROUND_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--background-color').trim();
-        const MODEL_COLOR = getComputedStyle(document.documentElement).getPropertyValue('--model-color').trim();
-
-        function rgbToThreeColor(rgbString) {
-            const [r, g, b] = rgbString.match(/\d+/g).map(Number);
-            return new THREE.Color(r / 255, g / 255, b / 255);
-        }
-
         const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 100);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setClearColor(rgbToThreeColor(BACKGROUND_COLOR), 1);
         document.getElementById('viewer-container').appendChild(renderer.domElement);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-        camera.position.set(0, 0, 100);
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.minDistance = 10;
-        controls.maxDistance = 5000;
-
-        // Add uniform lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-        scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-        directionalLight.position.set(10, 10, 10);
-        scene.add(directionalLight);
 
         const loader = new THREE.STLLoader();
         loader.load('/models/{{ model_filename }}', geometry => {
-            geometry.computeVertexNormals();
-            geometry = geometry.toNonIndexed();
-            const modifier = new THREE.SubdivisionModifier(2);
-            const refined = modifier.modify(geometry);
-
             const material = new THREE.MeshStandardMaterial({
-                color: rgbToThreeColor(MODEL_COLOR),
-                flatShading: false,
-                metalness: 0.2,
+                color: 0x0077ff,
+                metalness: 0.1,
                 roughness: 0.3
             });
-
-            const mesh = new THREE.Mesh(refined, material);
+            const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
-            // Auto-scale and center
+            // Center and scale model
             const box = new THREE.Box3().setFromObject(mesh);
-            const size = box.getSize(new THREE.Vector3());
             const center = box.getCenter(new THREE.Vector3());
-
+            const size = box.getSize(new THREE.Vector3());
             mesh.geometry.translate(-center.x, -center.y, -center.z);
-            const maxDim = Math.max(size.x, size.y, size.z);
-            camera.position.set(0, 0, maxDim * 2);
-            controls.maxDistance = maxDim * 5;
-            controls.minDistance = maxDim * 0.2;
+            camera.position.z = size.length() * 1.5;
         });
 
-        window.addEventListener('resize', () => {
+        window.addEventListener("resize", () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -101,8 +62,13 @@
             controls.update();
             renderer.render(scene, camera);
         }
-
         animate();
+
+        // Theme toggle
+        function toggleTheme() {
+            document.body.classList.toggle("dark");
+            document.body.classList.toggle("light");
+        }
     </script>
 </body>
 </html>
