@@ -54,25 +54,25 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const uploadRes = await fetch("/upload", { method: "POST", body: formData });
             const uploadData = await uploadRes.json();
-            if (!uploadRes.ok) throw new Error(uploadData.error);
+            if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed.");
 
             const qrRes = await fetch("/generate_qr", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename: uploadData.stl })
+                body: JSON.stringify({ filename: uploadData.stl_filename })  // ✅ fixed line
             });
             const qrData = await qrRes.json();
-            if (!qrRes.ok) throw new Error(qrData.error);
+            if (!qrRes.ok) throw new Error(qrData.error || "QR generation failed.");
 
-            viewerLink.textContent = qrData.url;
-            viewerLink.href = qrData.url;
-            qrPreview.src = qrData.qr;
+            viewerLink.textContent = qrData.viewer_url;
+            viewerLink.href = qrData.viewer_url;
+            qrPreview.src = qrData.qr_code_path;
             result.hidden = false;
 
-            // Auto-copy link to clipboard
-            navigator.clipboard.writeText(qrData.url).then(() => {
+            // Auto-copy
+            navigator.clipboard.writeText(qrData.viewer_url).then(() => {
                 copyMessage.hidden = false;
-                setTimeout(() => copyMessage.hidden = true, 2000);
+                setTimeout(() => (copyMessage.hidden = true), 2000);
             });
         } catch (err) {
             alert("❌ " + err.message);
@@ -103,12 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
-            // Centering the object
             const box = new THREE.Box3().setFromObject(mesh);
             const center = box.getCenter(new THREE.Vector3());
             mesh.position.sub(center);
 
-            // Adjust camera to fit the object
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             const fov = camera.fov * (Math.PI / 180);
