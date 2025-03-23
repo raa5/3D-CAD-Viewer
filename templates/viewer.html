@@ -16,7 +16,7 @@
     body, html {
       margin: 0;
       overflow: hidden;
-      background: transparent !important;
+      background: var(--background-color);
     }
     #viewer-container {
       width: 100vw;
@@ -41,44 +41,53 @@
     renderer.setClearColor(rgbToThreeColor(BACKGROUND_COLOR), 1);
     document.getElementById("viewer-container").appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
     camera.position.set(0, 0, 100);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+    // Lighting
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
     scene.add(hemiLight);
-    scene.add(new THREE.DirectionalLight(0xffffff, 0.5));
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(3, 5, 2);
+    scene.add(dirLight);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
 
     const loader = new THREE.STLLoader();
-    loader.load(`/models/{{ model_filename }}`, function (geometry) {
-      geometry.computeVertexNormals();
-      geometry = geometry.toNonIndexed();
+    loader.load(`/models/{{ model_filename }}`, geometry => {
+      try {
+        geometry.computeVertexNormals();
+        geometry = geometry.toNonIndexed();
+        const modifier = new THREE.SubdivisionModifier(2);
+        const smoothGeometry = modifier.modify(geometry);
 
-      const modifier = new THREE.SubdivisionModifier(2);
-      const smoothGeometry = modifier.modify(geometry);
+        const material = new THREE.MeshStandardMaterial({
+          color: rgbToThreeColor(MODEL_COLOR),
+          metalness: 0.2,
+          roughness: 0.3,
+        });
 
-      const material = new THREE.MeshStandardMaterial({
-        color: rgbToThreeColor(MODEL_COLOR),
-        metalness: 0.1,
-        roughness: 0.3,
-      });
+        const mesh = new THREE.Mesh(smoothGeometry, material);
+        scene.add(mesh);
 
-      const mesh = new THREE.Mesh(smoothGeometry, material);
-      scene.add(mesh);
+        // Auto-scale camera and center mesh
+        const box = new THREE.Box3().setFromObject(mesh);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        mesh.geometry.translate(-center.x, -center.y, -center.z);
 
-      const box = new THREE.Box3().setFromObject(mesh);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      mesh.geometry.translate(-center.x, -center.y, -center.z);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        camera.position.set(0, 0, maxDim * 2);
+        controls.maxDistance = maxDim * 5;
+        controls.minDistance = maxDim * 0.2;
 
-      const maxDim = Math.max(size.x, size.y, size.z);
-      camera.position.set(0, 0, maxDim * 2);
-      controls.maxDistance = maxDim * 5;
-
-      animate();
+        animate();
+      } catch (error) {
+        console.error("Failed to render STL:", error);
+      }
     });
 
     window.addEventListener("resize", () => {
