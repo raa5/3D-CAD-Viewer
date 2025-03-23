@@ -19,7 +19,7 @@ os.makedirs(QR_DIR, exist_ok=True)
 
 # Configure Flask logging
 logging.basicConfig(level=logging.DEBUG)
-app.config['MAX_CONTENT_LENGTH'] = 120 * 1024 * 1024  # Accept files up to 120MB
+app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024 * 1024  # Accept files up to 20GB
 
 # Helper: Convert STL to GLB using meshio and trimesh
 def convert_stl_to_glb(input_stl, output_glb):
