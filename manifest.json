@@ -1,0 +1,35 @@
+{
+    "name": "3D CAD Viewer",
+    "short_name": "CADViewer",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0a84ff",
+    "icons": [
+      {
+        "src": "/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ],
+    "screenshots": [
+      {
+        "src": "/screenshots/screenshot1.png",
+        "sizes": "1280x800",
+        "type": "image/png",
+        "form_factor": "wide"
+      },
+      {
+        "src": "/screenshots/screenshot2.png",
+        "sizes": "720x1280",
+        "type": "image/png",
+        "form_factor": "narrow"
+      }
+    ]
+  }
+  
