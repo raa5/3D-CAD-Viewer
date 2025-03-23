@@ -1,21 +1,22 @@
 {
-  "name": "3D CAD Viewer",
-  "short_name": "CADViewer",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f5f5f7",
-  "theme_color": "#0071e3",
-  "description": "Upload STL files, preview them, and generate QR codes for sharing 3D models.",
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
+    "name": "3D CAD Viewer",
+    "short_name": "CADViewer",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0a84ff",
+    "orientation": "portrait",
+    "icons": [
+      {
+        "src": "/static/icon-192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/static/icon-512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
+  

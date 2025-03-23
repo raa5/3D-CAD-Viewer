@@ -131,6 +131,11 @@ def list_files():
         return jsonify({"files": os.listdir(MODEL_DIR)})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
+
 
 # Run app
 if __name__ == '__main__':
