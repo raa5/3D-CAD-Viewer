@@ -8,12 +8,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const qrPreview = document.getElementById("qr-preview");
     const copyMessage = document.querySelector(".copy-message");
 
-    // Theme toggle
+    // 🌙 Theme toggle
     document.getElementById("toggle-theme").onclick = () => {
         document.body.classList.toggle("dark");
     };
 
-    // STL preview
+    // 🔍 "Browse" click triggers file input
+    document.querySelector(".browse").addEventListener("click", () => {
+        fileInput.click();
+    });
+
+    // 🎯 STL preview when file selected
     fileInput.addEventListener("change", () => {
         const file = fileInput.files[0];
         if (file) {
@@ -21,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Drag and drop behavior
+    // 📂 Drag and drop handlers
     ['dragenter', 'dragover'].forEach(event => {
         dropArea.addEventListener(event, e => {
             e.preventDefault();
@@ -44,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Upload + QR Generation
+    // 🚀 Upload and generate QR code
     form.onsubmit = async (e) => {
         e.preventDefault();
         loader.hidden = false;
@@ -54,25 +59,26 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const uploadRes = await fetch("/upload", { method: "POST", body: formData });
             const uploadData = await uploadRes.json();
-            if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed.");
+            if (!uploadRes.ok) throw new Error(uploadData.error);
 
             const qrRes = await fetch("/generate_qr", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename: uploadData.stl_filename })  // ✅ fixed line
+                body: JSON.stringify({ filename: uploadData.stl_filename || uploadData.stl })
             });
             const qrData = await qrRes.json();
-            if (!qrRes.ok) throw new Error(qrData.error || "QR generation failed.");
+            if (!qrRes.ok) throw new Error(qrData.error);
 
-            viewerLink.textContent = qrData.viewer_url;
-            viewerLink.href = qrData.viewer_url;
-            qrPreview.src = qrData.qr_code_path;
+            // ✨ Show result
+            viewerLink.textContent = qrData.viewer_url || qrData.url;
+            viewerLink.href = qrData.viewer_url || qrData.url;
+            qrPreview.src = qrData.qr_code_path || qrData.qr;
             result.hidden = false;
 
-            // Auto-copy
-            navigator.clipboard.writeText(qrData.viewer_url).then(() => {
+            // 📋 Auto-copy link to clipboard
+            navigator.clipboard.writeText(viewerLink.href).then(() => {
                 copyMessage.hidden = false;
-                setTimeout(() => (copyMessage.hidden = true), 2000);
+                setTimeout(() => copyMessage.hidden = true, 2000);
             });
         } catch (err) {
             alert("❌ " + err.message);
@@ -81,10 +87,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // STL Preview Function
+    // 🧱 STL Preview Viewer
     function previewSTL(file) {
         const preview = document.getElementById("preview");
         const reader = new FileReader();
+
         reader.onload = function (e) {
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(75, preview.clientWidth / preview.clientHeight, 0.1, 1000);
@@ -103,16 +110,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const mesh = new THREE.Mesh(geometry, material);
             scene.add(mesh);
 
+            // Center object
             const box = new THREE.Box3().setFromObject(mesh);
             const center = box.getCenter(new THREE.Vector3());
             mesh.position.sub(center);
 
+            // Camera setup
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
-            const fov = camera.fov * (Math.PI / 180);
-            let cameraZ = Math.abs(maxDim / 4 * Math.tan(fov * 2));
-            camera.position.z = cameraZ;
+            camera.position.set(0, 0, maxDim * 2);
 
+            // Animation loop
             const animate = function () {
                 requestAnimationFrame(animate);
                 mesh.rotation.y += 0.01;
@@ -120,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
             };
             animate();
         };
+
         reader.readAsArrayBuffer(file);
     }
 });
