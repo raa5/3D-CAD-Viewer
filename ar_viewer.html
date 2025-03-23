@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Viewer</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
+    <style>
+        body, html {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+        model-viewer {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- If iPhone, use USDZ -->
+    {% if is_usdz %}
+        <a rel="ar" href="{{ model_url }}">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/AR_Quick_Look_icon.png/120px-AR_Quick_Look_icon.png" width="50">
+            Open in AR
+        </a>
+    {% else %}
+        <!-- Normal GLB AR Mode -->
+        <model-viewer 
+            id="ar-viewer"
+            src="{{ model_url }}"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            shadow-intensity="1"
+            exposure="1"
+            disable-zoom>
+        </model-viewer>
+    {% endif %}
+
+</body>
+</html>

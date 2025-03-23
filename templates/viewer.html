@@ -2,21 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Viewer</title>
+
+  <!-- Three.js core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- STL Loader -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  <!-- Orbit Controls -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Subdivision Modifier -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/modifiers/SubdivisionModifier.js"></script>
+
   <style>
     :root {
       --background-color: rgb(236, 234, 234);
       --model-color: rgb(6, 107, 223);
     }
-    body, html {
+    html, body {
       margin: 0;
       overflow: hidden;
-      background: var(--background-color);
+      background: transparent !important;
     }
     #viewer-container {
       width: 100vw;
@@ -26,74 +32,89 @@
 </head>
 <body>
   <div id="viewer-container"></div>
+
   <script>
-    const BACKGROUND_COLOR = "rgb(236, 234, 234)";
+    const BACKGROUND_COLOR = "rgb(233, 228, 228)";
     const MODEL_COLOR = "rgb(6, 107, 223)";
 
-    function rgbToThreeColor(rgbString) {
-      const [r, g, b] = rgbString.match(/\d+/g).map(Number);
+    function rgbToThreeColor(rgb) {
+      const [r, g, b] = rgb.match(/\d+/g).map(Number);
       return new THREE.Color(r / 255, g / 255, b / 255);
     }
 
     const scene = new THREE.Scene();
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(rgbToThreeColor(BACKGROUND_COLOR), 1);
     document.getElementById("viewer-container").appendChild(renderer.domElement);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
     camera.position.set(0, 0, 100);
-
-    // Lighting
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
-    scene.add(hemiLight);
-
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(3, 5, 2);
-    scene.add(dirLight);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.1;
 
+    // Lighting for uniform clarity
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
+    hemiLight.position.set(0, 200, 0);
+    scene.add(hemiLight);
+
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.6).position.set(1, 1, 1));
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.4).position.set(-1, -1, 1));
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.3).position.set(1, -1, -1));
+
+    // STL Loader
     const loader = new THREE.STLLoader();
-    loader.load(`/models/{{ model_filename }}`, geometry => {
+    loader.load('/models/{{ model_filename }}', function (geometry) {
+      let mesh;
       try {
         geometry.computeVertexNormals();
         geometry = geometry.toNonIndexed();
-        const modifier = new THREE.SubdivisionModifier(2);
-        const smoothGeometry = modifier.modify(geometry);
+
+        const modifier = new THREE.SubdivisionModifier(3); // Tune as needed
+        const refinedGeometry = modifier.modify(geometry);
 
         const material = new THREE.MeshStandardMaterial({
           color: rgbToThreeColor(MODEL_COLOR),
-          metalness: 0.2,
+          metalness: 0.3,
           roughness: 0.3,
+          flatShading: false
         });
 
-        const mesh = new THREE.Mesh(smoothGeometry, material);
+        mesh = new THREE.Mesh(refinedGeometry, material);
         scene.add(mesh);
+      } catch (err) {
+        console.error("Subdivision failed, using fallback mesh:", err);
 
-        // Auto-scale camera and center mesh
-        const box = new THREE.Box3().setFromObject(mesh);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        mesh.geometry.translate(-center.x, -center.y, -center.z);
+        const material = new THREE.MeshStandardMaterial({
+          color: rgbToThreeColor(MODEL_COLOR),
+          flatShading: false
+        });
 
-        const maxDim = Math.max(size.x, size.y, size.z);
-        camera.position.set(0, 0, maxDim * 2);
-        controls.maxDistance = maxDim * 5;
-        controls.minDistance = maxDim * 0.2;
-
-        animate();
-      } catch (error) {
-        console.error("Failed to render STL:", error);
+        mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
       }
-    });
 
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      // Always center and auto-position camera
+      const bbox = new THREE.Box3().setFromObject(mesh);
+      const center = bbox.getCenter(new THREE.Vector3());
+      const size = bbox.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+
+      mesh.geometry.translate(-center.x, -center.y, -center.z);
+      camera.position.set(0, 0, maxDim * 2);
+      camera.near = maxDim / 100;
+      camera.far = maxDim * 10;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      controls.target.set(0, 0, 0);
+      controls.maxDistance = maxDim * 5;
+      controls.minDistance = maxDim * 0.2;
+      controls.update();
+
+      animate();
     });
 
     function animate() {
@@ -101,6 +122,12 @@
       controls.update();
       renderer.render(scene, camera);
     }
+
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
   </script>
 </body>
 </html>

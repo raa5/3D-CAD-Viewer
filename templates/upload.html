@@ -2,38 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>3D STL Uploader</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/static/manifest.json">
-    <link rel="stylesheet" href="/static/style.css">
+    <title>STL QR Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 30px;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        label, select, input[type="file"] {
+            display: block;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0077ff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #005ec4;
+        }
+        #qr-container {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #qr-img {
+            max-width: 200px;
+            margin-top: 10px;
+        }
+        #notification {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-    <div class="theme-toggle">
-        <button id="toggle-theme">🌓 Toggle Theme</button>
+    <h1>Upload STL File & Generate QR</h1>
+    <form id="upload-form">
+        <label for="file">Select STL File:</label>
+        <input type="file" name="file" id="file" accept=".stl" required>
+
+        <label for="viewer">Viewer Type:</label>
+        <select name="viewer" id="viewer">
+            <option value="standard">Standard Viewer</option>
+            <option value="ar">AR Viewer</option>
+        </select>
+
+        <button type="submit">Upload & Generate</button>
+    </form>
+
+    <div id="notification"></div>
+
+    <div id="qr-container">
+        <a id="qr-link" href="#" target="_blank"></a>
+        <br>
+        <img id="qr-img" src="" alt="QR Code">
     </div>
 
-    <div class="container">
-        <h1>Upload STL & Generate QR</h1>
-        <form id="upload-form">
-            <div id="drop-area">
-                <p>Drag & Drop or <span class="browse">Browse</span> to Upload STL File</p>
-                <input type="file" id="file" name="file" accept=".stl" hidden>
-            </div>
-            <div id="preview"></div>
-            <button type="submit">Upload & Generate</button>
-        </form>
-        <div id="loader" class="loader" hidden></div>
-        <div id="result" hidden>
-            <p><strong>Viewer Link:</strong> <a id="viewer-link" href="#" target="_blank"></a></p>
-            <p><strong>QR Code:</strong><br><img id="qr-preview" src="" alt="QR Code"></p>
-            <p class="copy-message" hidden>Link copied to clipboard!</p>
-        </div>
-    </div>
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
 
-    <footer>© Rohen Agarwal</footer>
+            document.getElementById('notification').textContent = 'Uploading...';
+            document.getElementById('qr-img').src = '';
+            document.getElementById('qr-link').textContent = '';
+            document.getElementById('qr-link').href = '#';
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-    <script src="/static/upload.js"></script>
+            try {
+                const uploadRes = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const uploadData = await uploadRes.json();
+
+                if (!uploadRes.ok) throw new Error(uploadData.error);
+
+                const filename = uploadData.stl_filename;
+                const viewer = form.viewer.value;
+
+                const qrRes = await fetch('/generate_qr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, viewer })
+                });
+
+                const qrData = await qrRes.json();
+                if (!qrRes.ok) throw new Error(qrData.error);
+
+                document.getElementById('qr-img').src = qrData.qr_code_path;
+                document.getElementById('qr-link').href = qrData.viewer_url;
+                document.getElementById('qr-link').textContent = 'Open 3D Viewer';
+                document.getElementById('notification').textContent = '✅ Upload and QR generation complete!';
+
+            } catch (error) {
+                document.getElementById('notification').textContent = '❌ ' + error.message;
+            }
+        });
+    </script>
 </body>
 </html>
