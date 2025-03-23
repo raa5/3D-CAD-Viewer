@@ -1,132 +1,209 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Upload 3D Model</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary-color: #00fff7;
-      --bg-color: #0d0d0d;
-      --accent-color: #1a1a1a;
-      --border-color: #2e2e2e;
-      --text-color: #ffffff;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload & Generate QR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-light: #f5f5f7;
+            --bg-dark: #1c1c1e;
+            --text-light: #1c1c1e;
+            --text-dark: #f5f5f7;
+            --accent: #0071e3;
+            --border: #ccc;
+        }
 
-    body {
-      font-family: 'Orbitron', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
+        [data-theme="dark"] {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
 
-    h1 {
-      color: var(--primary-color);
-      margin-bottom: 1rem;
-    }
+        [data-theme="light"] {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
 
-    .upload-box {
-      background: var(--accent-color);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 0 20px rgba(0, 255, 247, 0.1);
-      max-width: 400px;
-      width: 90%;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
 
-    input[type="file"] {
-      margin: 1rem 0;
-      width: 100%;
-    }
+        .container {
+            max-width: 600px;
+            margin: 6vh auto;
+            padding: 30px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
 
-    button {
-      background-color: var(--primary-color);
-      color: var(--bg-color);
-      border: none;
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-      transition: background-color 0.3s;
-    }
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
 
-    button:hover {
-      background-color: #00e6d1;
-    }
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            font-size: 16px;
+        }
 
-    #qr-section {
-      margin-top: 2rem;
-      text-align: center;
-    }
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
 
-    footer {
-      position: fixed;
-      bottom: 10px;
-      width: 100%;
-      text-align: center;
-      color: #777;
-      font-size: 0.85rem;
-    }
-  </style>
+        button:hover {
+            background-color: #005bb5;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .link-container {
+            text-align: center;
+            margin-top: 20px;
+            word-wrap: break-word;
+        }
+
+        .toggle-theme {
+            position: fixed;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            background-color: var(--accent);
+            color: white;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.9em;
+            margin-top: 60px;
+            opacity: 0.6;
+        }
+
+        .loading-spinner {
+            margin: 0 auto;
+            margin-top: 15px;
+            border: 4px solid rgba(0,0,0,0.1);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+    </style>
 </head>
 <body>
-  <h1>Upload Your STL Model</h1>
-  <div class="upload-box">
-    <input type="file" id="stlFile">
-    <button onclick="uploadSTL()">Upload + Generate QR</button>
-  </div>
-  <div id="qr-section"></div>
+    <button class="toggle-theme" onclick="toggleTheme()">Toggle Theme</button>
 
-  <footer>
-    &copy; 2025 Rohen Agarwal. All rights reserved.
-  </footer>
+    <div class="container">
+        <h1>Upload STL & Generate QR</h1>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file" accept=".stl" required />
+            <button type="submit">Upload</button>
+        </form>
 
-  <script>
-    async function uploadSTL() {
-      const fileInput = document.getElementById('stlFile');
-      if (!fileInput.files.length) {
-        alert('Please select a file first.');
-        return;
-      }
+        <div class="loading-spinner" id="loadingSpinner"></div>
 
-      const formData = new FormData();
-      formData.append('file', fileInput.files[0]);
+        <div class="status" id="statusText"></div>
 
-      const uploadRes = await fetch('/upload', {
-        method: 'POST',
-        body: formData
-      });
-      const uploadData = await uploadRes.json();
+        <div class="link-container" id="linkContainer" style="display: none;">
+            <p><strong>Viewer Link:</strong></p>
+            <a href="#" target="_blank" id="viewerLink"></a>
+            <p><strong>QR Code:</strong></p>
+            <img id="qrImage" src="" alt="QR Code" width="200" />
+        </div>
+    </div>
 
-      if (uploadRes.ok) {
-        const genRes = await fetch('/generate_qr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: uploadData.stl_filename })
-        });
-        const qrData = await genRes.json();
+    <footer>
+        © Rohen Agarwal
+    </footer>
 
-        if (genRes.ok) {
-          document.getElementById('qr-section').innerHTML = `
-            <p>Model Link: <a href="${qrData.viewer_url}" target="_blank">${qrData.viewer_url}</a></p>
-            <img src="${qrData.qr_code_path}" alt="QR Code" width="200">
-          `;
-        } else {
-          alert('QR generation failed: ' + qrData.error);
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.dataset.theme = html.dataset.theme === "light" ? "dark" : "light";
         }
-      } else {
-        alert('Upload failed: ' + uploadData.error);
-      }
-    }
-  </script>
+
+        document.getElementById("uploadForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const file = document.getElementById("fileInput").files[0];
+            if (!file) return;
+
+            const status = document.getElementById("statusText");
+            const spinner = document.getElementById("loadingSpinner");
+            const linkContainer = document.getElementById("linkContainer");
+
+            status.textContent = "Uploading and processing...";
+            spinner.style.display = "block";
+            linkContainer.style.display = "none";
+
+            try {
+                const formData = new FormData();
+                formData.append("file", file);
+
+                const uploadRes = await fetch("/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const uploadData = await uploadRes.json();
+                if (!uploadRes.ok) throw new Error(uploadData.error);
+
+                const filename = uploadData.stl_filename;
+
+                const qrRes = await fetch("/generate_qr", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename }),
+                });
+
+                const qrData = await qrRes.json();
+                if (!qrRes.ok) throw new Error(qrData.error);
+
+                document.getElementById("viewerLink").href = qrData.viewer_url;
+                document.getElementById("viewerLink").textContent = qrData.viewer_url;
+                document.getElementById("qrImage").src = qrData.qr_code_path;
+
+                status.textContent = "Success! STL processed.";
+                linkContainer.style.display = "block";
+            } catch (err) {
+                status.textContent = "❌ Error: " + err.message;
+            } finally {
+                spinner.style.display = "none";
+            }
+        });
+    </script>
 </body>
 </html>
