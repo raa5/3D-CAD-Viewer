@@ -1,261 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>3D Upload & QR Generator</title>
-  <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D CAD Viewer Upload</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600&display=swap" />
   <style>
     :root {
-      --bg: #f4f4f7;
-      --text: #111;
-      --card: #fff;
-      --primary: #007aff;
-      --accent: #333;
+      --primary-bg: #f8f8f8;
+      --primary-color: #0a84ff;
+      --dark-bg: #1e1e1e;
+      --dark-color: #ffffff;
     }
 
     [data-theme='dark'] {
-      --bg: #111;
-      --text: #fff;
-      --card: #1e1e1e;
-      --primary: #0a84ff;
-      --accent: #aaa;
+      background-color: var(--dark-bg);
+      color: var(--dark-color);
     }
 
-    * {
+    body {
       margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
       font-family: 'Inter', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    h1 {
-      margin: 2rem 0 1rem;
-    }
-
-    .drop-zone {
-      border: 2px dashed var(--accent);
-      border-radius: 12px;
-      padding: 3rem;
-      text-align: center;
-      width: 80%;
-      max-width: 500px;
-      margin: 1rem auto;
-      background: var(--card);
+      background-color: var(--primary-bg);
+      color: #000;
       transition: background 0.3s ease;
     }
 
-    .drop-zone.dragover {
-      background: rgba(0, 122, 255, 0.1);
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 2rem;
+      text-align: center;
     }
 
-    canvas {
-      max-height: 300px;
-      margin: 1rem auto;
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
     }
 
-    .buttons {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    button {
-      padding: 10px 20px;
-      border: none;
-      background: var(--primary);
-      color: white;
-      font-weight: bold;
-      border-radius: 6px;
+    .drop-zone {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 2rem;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s ease;
     }
 
-    button:hover {
-      background: #005ecb;
+    .drop-zone.dragover {
+      background-color: #eef;
+      border-color: var(--primary-color);
     }
 
-    .toggle-theme {
+    input[type="file"] {
+      display: none;
+    }
+
+    .theme-toggle {
       position: absolute;
       top: 1rem;
       right: 1rem;
       cursor: pointer;
-      font-size: 0.9rem;
-      background: none;
-      border: 1px solid var(--accent);
-      padding: 6px 12px;
-      border-radius: 6px;
+      font-size: 1.2rem;
     }
 
-    .loader {
+    .preview-container {
+      margin-top: 2rem;
+      height: 300px;
+    }
+
+    #status {
       margin-top: 1rem;
-      border: 5px solid var(--accent);
-      border-top: 5px solid var(--primary);
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      animation: spin 1s linear infinite;
-      display: none;
+      font-weight: 600;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    #output {
+    button {
       margin-top: 1rem;
-      word-break: break-word;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .fade {
+      animation: fadeIn 0.8s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     footer {
-      margin-top: auto;
-      padding: 1rem;
-      font-size: 0.8rem;
-      color: var(--accent);
+      margin-top: 2rem;
+      font-size: 0.9rem;
+      color: #777;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 <body data-theme="light">
-  <button class="toggle-theme" onclick="toggleTheme()">🌙 Theme</button>
-  <h1>3D STL QR Generator</h1>
-
-  <div class="drop-zone" id="drop-zone">
-    <p>Drag and drop your STL file here or click to select</p>
-    <input type="file" id="fileInput" accept=".stl" hidden>
+  <div class="theme-toggle" onclick="toggleTheme()">🌓</div>
+  <div class="container fade">
+    <h1>Upload Your STL File</h1>
+    <label class="drop-zone" id="drop-zone">
+      <p>Drag and drop STL file here or click to select</p>
+      <input type="file" id="file-input" accept=".stl" />
+    </label>
+    <div class="preview-container" id="preview-container"></div>
+    <button onclick="uploadFile()">Upload & Generate QR</button>
+    <div id="status"></div>
+    <footer>© Rohen Agarwal</footer>
   </div>
 
-  <canvas id="previewCanvas"></canvas>
-
-  <div class="buttons">
-    <button onclick="uploadFile()">Upload</button>
-    <button onclick="generateQR()">Generate QR</button>
-  </div>
-
-  <div class="loader" id="loader"></div>
-  <div id="output"></div>
-
-  <footer>© Rohen Agarwal</footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
 
   <script>
     const dropZone = document.getElementById("drop-zone");
-    const fileInput = document.getElementById("fileInput");
+    const fileInput = document.getElementById("file-input");
+    const previewContainer = document.getElementById("preview-container");
+    const status = document.getElementById("status");
     let selectedFile = null;
 
     dropZone.addEventListener("click", () => fileInput.click());
-
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
       dropZone.classList.add("dragover");
     });
-
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("dragover");
-    });
-
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
     dropZone.addEventListener("drop", (e) => {
       e.preventDefault();
       dropZone.classList.remove("dragover");
-      selectedFile = e.dataTransfer.files[0];
+      fileInput.files = e.dataTransfer.files;
+      selectedFile = fileInput.files[0];
       showPreview(selectedFile);
     });
 
-    fileInput.addEventListener("change", (e) => {
-      selectedFile = e.target.files[0];
+    fileInput.addEventListener("change", () => {
+      selectedFile = fileInput.files[0];
       showPreview(selectedFile);
     });
 
     function showPreview(file) {
+      if (!file || !file.name.endsWith(".stl")) return;
       const reader = new FileReader();
       reader.onload = function (e) {
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-        camera.position.z = 100;
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('previewCanvas') });
-        renderer.setSize(300, 300);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(previewContainer.clientWidth, previewContainer.clientHeight);
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(renderer.domElement);
         const loader = new THREE.STLLoader();
-        loader.load(URL.createObjectURL(file), function (geometry) {
-          const material = new THREE.MeshNormalMaterial();
-          const mesh = new THREE.Mesh(geometry, material);
-          scene.add(mesh);
-          animate();
-
-          function animate() {
-            requestAnimationFrame(animate);
-            mesh.rotation.y += 0.01;
-            renderer.render(scene, camera);
-          }
-        });
+        const geometry = loader.parse(e.target.result);
+        const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(1, 1, 1).normalize();
+        scene.add(light);
+        const box = new THREE.Box3().setFromObject(mesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        mesh.geometry.translate(-center.x, -center.y, -center.z);
+        camera.position.z = size.length() * 2;
+        renderer.render(scene, camera);
       };
       reader.readAsArrayBuffer(file);
     }
 
     function uploadFile() {
-      if (!selectedFile) return alert("Please select an STL file.");
-      document.getElementById("loader").style.display = "block";
-
+      if (!selectedFile) {
+        status.textContent = "Please select an STL file.";
+        return;
+      }
       const formData = new FormData();
       formData.append("file", selectedFile);
+      status.textContent = "Uploading and generating QR... ⏳";
 
       fetch("/upload", {
         method: "POST",
         body: formData
-      }).then(res => res.json()).then(data => {
-        document.getElementById("loader").style.display = "none";
-        if (data.error) {
-          document.getElementById("output").textContent = "Upload failed: " + data.error;
-        } else {
-          document.getElementById("output").innerHTML = `✅ Uploaded: ${data.stl_filename}`;
-        }
-      });
-    }
-
-    function generateQR() {
-      if (!selectedFile) return alert("Please select an STL file first.");
-
-      fetch("/generate_qr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: selectedFile.name, viewer: "standard" })
-      }).then(res => res.json()).then(data => {
-        if (data.error) {
-          document.getElementById("output").textContent = "QR generation failed: " + data.error;
-        } else {
-          const qrImg = `<img src="${data.qr_code_path}" alt="QR Code" style="width:100px;"><br>`;
-          const link = `<a href="${data.viewer_url}" target="_blank">${data.viewer_url}</a>`;
-          document.getElementById("output").innerHTML = qrImg + link;
-
-          // Auto copy to clipboard
-          navigator.clipboard.writeText(data.viewer_url).then(() => {
-            document.getElementById("output").innerHTML += "<br><em>🔗 Link copied to clipboard!</em>";
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.glb_filename) {
+          return fetch("/generate_qr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: data.stl_filename, viewer: "ar" })
           });
+        } else {
+          throw new Error("Upload failed");
         }
+      })
+      .then(res => res.json())
+      .then(qrData => {
+        const link = qrData.viewer_url;
+        navigator.clipboard.writeText(link);
+        status.innerHTML = `✅ QR generated! <br><a href="${link}" target="_blank">${link}</a> (auto copied)`;
+      })
+      .catch(err => {
+        status.textContent = "❌ Error: " + err.message;
       });
     }
 
     function toggleTheme() {
       const body = document.body;
-      const current = body.getAttribute("data-theme");
-      body.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+      const newTheme = body.dataset.theme === "light" ? "dark" : "light";
+      body.dataset.theme = newTheme;
     }
-  </script>
 
-  <script>
-    // PWA support
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js");
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/service-worker.js")
+          .then(() => console.log("✅ PWA ready"))
+          .catch(e => console.error("❌ SW failed", e));
+      });
     }
   </script>
 </body>
