@@ -110,11 +110,19 @@
                 const fallbackMesh = new THREE.Mesh(geometry, material);
                 scene.add(fallbackMesh);
 
-                const boundingBox = new THREE.Box3().setFromObject(fallbackMesh);
+                const boundingBox = new THREE.Box3().setFromObject(mesh);
                 const size = boundingBox.getSize(new THREE.Vector3());
                 const center = boundingBox.getCenter(new THREE.Vector3());
-                fallbackMesh.geometry.translate(-center.x, -center.y, -center.z);
-                camera.position.z = size.length() * 1.5;
+
+                // Translate model to center
+                mesh.geometry.translate(-center.x, -center.y, -center.z);
+
+                // Dynamically set camera distance based on model size
+                const maxDim = Math.max(size.x, size.y, size.z);
+                camera.position.set(0, 0, maxDim * 2); // Move further back for large models
+                controls.maxDistance = maxDim * 5;     // Allow zooming out more
+                controls.minDistance = maxDim * 0.2;   // Prevent zooming in too much
+
             }
 
             animate();
