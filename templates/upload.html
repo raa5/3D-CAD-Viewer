@@ -6,142 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <style>
-        :root {
-            --bg-light: #f2f2f5;
-            --bg-dark: #1c1c1e;
-            --text-light: #1c1c1e;
-            --text-dark: #f2f2f5;
-            --primary: #007aff;
-        }
-
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen;
-            background-color: var(--bg-light);
-            color: var(--text-light);
-            transition: all 0.3s ease;
-        }
-
-        body.dark {
-            background-color: var(--bg-dark);
-            color: var(--text-dark);
-        }
-
-        .container {
-            max-width: 700px;
-            margin: 40px auto;
-            padding: 2rem;
-            border-radius: 16px;
-            background-color: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-        }
-
-        body.dark .container {
-            background-color: rgba(28, 28, 30, 0.7);
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .drop-zone {
-            border: 2px dashed var(--primary);
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .drop-zone:hover {
-            background-color: rgba(0, 122, 255, 0.1);
-        }
-
-        #fileInput {
-            display: none;
-        }
-
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 1rem;
-        }
-
-        .preview {
-            margin: 20px auto;
-            width: 100%;
-            height: 300px;
-            border: 1px solid #ccc;
-        }
-
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-            display: none;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .toggle-theme {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .result {
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: rgba(200, 200, 200, 0.2);
-            border-radius: 8px;
-            word-break: break-all;
-        }
-
-        .copy-success {
-            color: green;
-            font-size: 14px;
-            margin-top: 0.3rem;
-        }
-
-        footer {
-            text-align: center;
-            font-size: 13px;
-            margin-top: 2rem;
-            opacity: 0.6;
-        }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <div class="toggle-theme" onclick="toggleTheme()">🌓 Toggle Theme</div>
+    <div class="theme-toggle">
+        <button id="toggle-theme">🌓 Toggle Theme</button>
+    </div>
 
     <div class="container">
         <h1>Upload STL & Generate QR</h1>
-        <label for="fileInput" class="drop-zone" id="dropZone">
-            Drag & Drop or Click to Upload STL File
-        </label>
-        <input type="file" id="fileInput" accept=".stl">
-
-        <div class="preview" id="preview"></div>
-
-        <button class="btn" onclick="uploadAndGenerate()">Upload & Generate</button>
-        <div class="loader" id="loader"></div>
-        <div class="result" id="result" style="display:none;"></div>
+        <form id="upload-form">
+            <div id="drop-area">
+                <p>Drag & Drop or <span class="browse">Browse</span> to Upload STL File</p>
+                <input type="file" id="file" name="file" accept=".stl" hidden>
+            </div>
+            <div id="preview"></div>
+            <button type="submit">Upload & Generate</button>
+        </form>
+        <div id="loader" class="loader" hidden></div>
+        <div id="result" hidden>
+            <p><strong>Viewer Link:</strong> <a id="viewer-link" href="#" target="_blank"></a></p>
+            <p><strong>QR Code:</strong><br><img id="qr-preview" src="" alt="QR Code"></p>
+            <p class="copy-message" hidden>Link copied to clipboard!</p>
+        </div>
     </div>
 
     <footer>© Rohen Agarwal</footer>
@@ -149,124 +36,6 @@
     <!-- Three.js STL Viewer Preview -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-
-    <script>
-        const dropZone = document.getElementById("dropZone");
-        const fileInput = document.getElementById("fileInput");
-        const loader = document.getElementById("loader");
-        const preview = document.getElementById("preview");
-        const result = document.getElementById("result");
-
-        let selectedFile = null;
-
-        dropZone.addEventListener("click", () => fileInput.click());
-        dropZone.addEventListener("dragover", e => {
-            e.preventDefault();
-            dropZone.style.backgroundColor = "rgba(0, 122, 255, 0.1)";
-        });
-        dropZone.addEventListener("dragleave", () => {
-            dropZone.style.backgroundColor = "";
-        });
-        dropZone.addEventListener("drop", e => {
-            e.preventDefault();
-            selectedFile = e.dataTransfer.files[0];
-            fileInput.files = e.dataTransfer;
-            previewSTL(selectedFile);
-        });
-
-        fileInput.addEventListener("change", () => {
-            selectedFile = fileInput.files[0];
-            previewSTL(selectedFile);
-        });
-
-        function previewSTL(file) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                const scene = new THREE.Scene();
-                const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-                camera.position.set(0, 0, 100);
-                const renderer = new THREE.WebGLRenderer();
-                renderer.setSize(preview.clientWidth, preview.clientHeight);
-                preview.innerHTML = "";
-                preview.appendChild(renderer.domElement);
-
-                const light = new THREE.AmbientLight(0xffffff, 2);
-                scene.add(light);
-
-                const loader = new THREE.STLLoader();
-                loader.load(e.target.result, geometry => {
-                    geometry.computeVertexNormals();
-                    const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
-                    const mesh = new THREE.Mesh(geometry, material);
-                    const box = new THREE.Box3().setFromObject(mesh);
-                    const center = box.getCenter(new THREE.Vector3());
-                    geometry.translate(-center.x, -center.y, -center.z);
-                    scene.add(mesh);
-                    renderer.render(scene, camera);
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function uploadAndGenerate() {
-            if (!selectedFile) {
-                alert("Please select an STL file first.");
-                return;
-            }
-
-            loader.style.display = "block";
-            result.style.display = "none";
-
-            const formData = new FormData();
-            formData.append("file", selectedFile);
-
-            fetch("/upload", {
-                method: "POST",
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.stl_filename) {
-                    return fetch("/generate_qr", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ filename: data.stl_filename })
-                    });
-                } else {
-                    throw new Error(data.error || "Upload failed.");
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                loader.style.display = "none";
-                const html = `
-                    <p><strong>Viewer Link:</strong> <a href="${data.viewer_url}" target="_blank">${data.viewer_url}</a></p>
-                    <p><strong>QR Code:</strong><br><img src="${data.qr_code_path}" style="max-width: 150px;"></p>
-                    <button class="btn" onclick="copyToClipboard('${data.viewer_url}')">📋 Copy Viewer Link</button>
-                `;
-                result.innerHTML = html;
-                result.style.display = "block";
-            })
-            .catch(err => {
-                loader.style.display = "none";
-                result.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
-                result.style.display = "block";
-            });
-        }
-
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                const msg = document.createElement("div");
-                msg.textContent = "Link copied!";
-                msg.className = "copy-success";
-                result.appendChild(msg);
-                setTimeout(() => msg.remove(), 1500);
-            });
-        }
-
-        function toggleTheme() {
-            document.body.classList.toggle("dark");
-        }
-    </script>
+    <script src="/upload.js"></script>
 </body>
 </html>
