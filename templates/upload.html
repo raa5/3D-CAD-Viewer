@@ -263,13 +263,6 @@
                 camera.updateProjectionMatrix();
 
                 renderer.render(scene, camera);  // 🛑 Only render once (no animation)
-        
-                function animate() {
-                    requestAnimationFrame(animate);
-                    mesh.rotation.y += 0.01;
-                    renderer.render(scene, camera);
-                }
-                animate();
 
             };
             reader.readAsArrayBuffer(file);
