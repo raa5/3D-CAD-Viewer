@@ -232,8 +232,8 @@
                 const width = container.clientWidth;
                 const height = container.clientHeight;
         
-                const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
                 renderer.setSize(width, height);
                 container.appendChild(renderer.domElement);
         
@@ -246,27 +246,45 @@
         
                 const material = new THREE.MeshStandardMaterial({ color: 0x0077ff });
                 const mesh = new THREE.Mesh(geometry, material);
-                scene.add(mesh);
         
-                // Center and fit model
+                // Center geometry
                 const box = new THREE.Box3().setFromObject(mesh);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
-                mesh.position.sub(center);
+                geometry.translate(-center.x, -center.y, -center.z);
         
+                // Wrap mesh in a group for rotation
+                const group = new THREE.Group();
+                group.add(mesh);
+                scene.add(group);
+        
+                // Adjust camera distance based on bounding size
                 const maxDim = Math.max(size.x, size.y, size.z);
                 const fov = camera.fov * (Math.PI / 180);
-                const cameraZ = maxDim / (2 * Math.tan(fov / 2));
-        
-                camera.position.set(0, 0, cameraZ * 1.2);  // add buffer space
+                const distance = maxDim / (2 * Math.tan(fov / 2));
+                camera.position.set(0, 0, distance * 1.5);
                 camera.lookAt(0, 0, 0);
-                camera.updateProjectionMatrix();
-
-                renderer.render(scene, camera);  // 🛑 Only render once (no animation)
-
+        
+                // Handle resizing
+                window.addEventListener("resize", () => {
+                    const newWidth = container.clientWidth;
+                    const newHeight = container.clientHeight;
+                    camera.aspect = newWidth / newHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(newWidth, newHeight);
+                });
+        
+                // Animate group rotation (not geometry)
+                function animate() {
+                    requestAnimationFrame(animate);
+                    group.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                }
+                animate();
             };
             reader.readAsArrayBuffer(file);
         }
+        
         
 
 
