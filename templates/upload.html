@@ -261,6 +261,8 @@
                 camera.position.set(0, 0, cameraZ * 1.2);  // add buffer space
                 camera.lookAt(0, 0, 0);
                 camera.updateProjectionMatrix();
+
+                renderer.render(scene, camera);  // 🛑 Only render once (no animation)
         
                 function animate() {
                     requestAnimationFrame(animate);
@@ -268,6 +270,7 @@
                     renderer.render(scene, camera);
                 }
                 animate();
+
             };
             reader.readAsArrayBuffer(file);
         }
