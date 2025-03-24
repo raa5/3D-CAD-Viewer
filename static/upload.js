@@ -128,7 +128,6 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
         if (!qrRes.ok) throw new Error(qrData.error);
 
         document.getElementById("viewerLink").href = qrData.viewer_url;
-        // document.getElementById("viewerLink").textContent = qrData.viewer_url;
         document.getElementById("viewerLink").textContent = "Click to View in 3D";
         document.getElementById("qrImage").src = qrData.qr_code_path;
 
