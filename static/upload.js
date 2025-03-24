@@ -128,7 +128,7 @@ document.getElementById("uploadForm").addEventListener("submit", async function 
         if (!qrRes.ok) throw new Error(qrData.error);
 
         document.getElementById("viewerLink").href = qrData.viewer_url;
-        document.getElementById("viewerLink").textContent = qrData.viewer_url;
+        document.getElementById("viewerLink").textContent = "Click Here for 3D Viewer";
         document.getElementById("qrImage").src = qrData.qr_code_path;
 
         status.textContent = "Success! STL processed.";
